@@ -1,1 +1,16 @@
-# RPi 5 containers
+services:
+  jade-platform:
+    image: jade-platform:local
+    build:
+      context: ..
+      dockerfile: jade-platform/Dockerfile
+    container_name: jade-platform
+    networks:
+      - jade-edge-net
+    restart: unless-stopped
+    ports:
+      - "1099:1099"
+
+networks:
+  jade-edge-net:
+    external: true

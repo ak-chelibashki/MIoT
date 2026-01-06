@@ -1,1 +1,50 @@
-# Container deployment
+- name: Deploy JADE platform runtime to RPi 5
+  hosts: coordinator
+  become: true
+
+  vars:
+    deploy_dir: /opt/jade
+
+  tasks:
+    - name: Ensure deploy directory exists
+      tags: ["deploy"]
+      file:
+        path: "{{ deploy_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+
+    - name: Copy /opt/jade build context (platform + vendor + compose)
+      tags: ["deploy"]
+      synchronize:
+        src: "{{ playbook_dir }}/../../docker/"
+        dest: /opt/jade/
+        recursive: yes
+        delete: yes
+
+    - name: Copy docker build context (jade-platform)
+      tags: ["deploy"]
+      synchronize:
+        src: "{{ playbook_dir }}/../../docker/jade-platform/"
+        dest: /opt/jade/jade-platform/
+        recursive: yes
+        delete: yes
+
+    - name: Copy compose file
+      tags: ["deploy"]
+      copy:
+        src: "{{ playbook_dir }}/../../docker/compose/coordinator.yml"
+        dest: /opt/jade/coordinator.yml
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0644"
+
+
+    - name: Build and start JADE platform
+      community.docker.docker_compose_v2:
+        project_src: "{{ deploy_dir }}"
+        files:
+          - coordinator.yml
+        state: present
+        build: always
