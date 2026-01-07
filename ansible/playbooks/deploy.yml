@@ -1,5 +1,5 @@
-- name: Deploy JADE platform runtime to RPi 5
-  hosts: coordinator
+- name: Deploy JADE runtime bundle to edge nodes
+  hosts: coordinator:field
   become: true
 
   vars:
@@ -7,44 +7,45 @@
 
   tasks:
     - name: Ensure deploy directory exists
-      tags: ["deploy"]
       file:
         path: "{{ deploy_dir }}"
         state: directory
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
         mode: "0755"
+      tags: [sync]
 
-    - name: Copy /opt/jade build context (platform + vendor + compose)
-      tags: ["deploy"]
+    - name: Sync docker runtime bundle to node (/opt/jade)
       synchronize:
         src: "{{ playbook_dir }}/../../docker/"
-        dest: /opt/jade/
+        dest: "{{ deploy_dir }}/"
         recursive: yes
         delete: yes
+      tags: [sync]
 
-    - name: Copy docker build context (jade-platform)
-      tags: ["deploy"]
-      synchronize:
-        src: "{{ playbook_dir }}/../../docker/jade-platform/"
-        dest: /opt/jade/jade-platform/
-        recursive: yes
-        delete: yes
-
-    - name: Copy compose file
-      tags: ["deploy"]
-      copy:
-        src: "{{ playbook_dir }}/../../docker/compose/coordinator.yml"
-        dest: /opt/jade/coordinator.yml
+    - name: Ensure compose directory exists
+      file:
+        path: "{{ deploy_dir }}/compose"
+        state: directory
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
-        mode: "0644"
+        mode: "0755"
+      tags: [sync]
 
+    - name: Sync compose files to node (/opt/jade/compose)
+      synchronize:
+        src: "{{ playbook_dir }}/../../docker/compose/"
+        dest: "{{ deploy_dir }}/compose/"
+        recursive: yes
+        delete: yes
+      tags: [sync]
 
-    - name: Build and start JADE platform
-      community.docker.docker_compose_v2:
-        project_src: "{{ deploy_dir }}"
-        files:
-          - coordinator.yml
-        state: present
-        build: always
+    - name: Bring up coordinator stack on coordinator nodes
+      command: docker compose -f {{ deploy_dir }}/compose/coordinator.yml up -d --build
+      when: "'coordinator' in group_names"
+      tags: [deploy]
+
+    - name: Bring up field stack on field nodes
+      command: docker compose -f {{ deploy_dir }}/compose/field.yml up -d --build
+      when: "'field' in group_names"
+      tags: [deploy]

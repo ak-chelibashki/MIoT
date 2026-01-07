@@ -1,6 +1,6 @@
 # First-time provisioning
-- name: Bootstrap Edge Node (RPi 5)
-  hosts: coordinator
+- name: Bootstrap Edge Node (RPi 5 / RPi 3B)
+  hosts: all
   become: true
 
   tasks:
@@ -30,11 +30,23 @@
         enabled: yes
         state: started
 
-    - name: Install Docker Compose v2 plugin
-      apt:
-        name: docker-compose-plugin
-        state: present
-        update_cache: yes
+    - name: Ensure Docker CLI plugins directory exists
+      file:
+        path: /usr/local/lib/docker/cli-plugins
+        state: directory
+        mode: "0755"
+
+    - name: Install Docker Compose CLI plugin (aarch64)
+      get_url:
+        url: https://github.com/docker/compose/releases/latest/download/docker-compose-linux-aarch64
+        dest: /usr/local/lib/docker/cli-plugins/docker-compose
+        mode: "0755"
+
+    - name: Verify docker compose works
+      command: docker compose version
+      changed_when: false
+
+
 
     - name: Add user to docker group
       user:
