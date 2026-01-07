@@ -1,0 +1,37 @@
+- name: Ensure gateway directory exists
+  file:
+    path: /opt/jade/gateway
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Copy edge gateway jar
+  copy:
+    src: edge-gateway-0.1.0.jar
+    dest: /opt/jade/gateway/edge-gateway-0.1.0.jar
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [gateway]
+
+- name: Install edge gateway systemd service
+  template:
+    src: edge-gateway.service.j2
+    dest: /etc/systemd/system/edge-gateway.service
+    owner: root
+    group: root
+    mode: "0644"
+  tags: [gateway]
+
+- name: Reload systemd daemon
+  command: systemctl daemon-reload
+  changed_when: false
+  tags: [gateway]
+
+- name: Enable and start edge gateway service
+  systemd:
+    name: edge-gateway
+    enabled: true
+    state: started
+  tags: [gateway]

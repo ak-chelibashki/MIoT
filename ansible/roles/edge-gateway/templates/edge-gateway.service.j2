@@ -1,0 +1,24 @@
+[Unit]
+Description=Edge Gateway (mDNS + Directory)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/jade/gateway
+
+Environment=NODE_ID={{ inventory_hostname }}
+Environment=GATEWAY_PORT=7000
+Environment=PEER_TTL_MS=30000
+
+ExecStart=/usr/bin/java -jar /opt/jade/gateway/edge-gateway-0.1.0.jar
+
+Restart=always
+RestartSec=2
+
+User=root
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

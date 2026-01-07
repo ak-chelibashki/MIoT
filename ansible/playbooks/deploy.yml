@@ -49,3 +49,9 @@
       command: docker compose -f {{ deploy_dir }}/compose/field.yml up -d --build
       when: "'field' in group_names"
       tags: [deploy]
+
+    - name: Deploy edge gateway
+      include_role:
+        name: edge-gateway
+      tags: [gateway]
+

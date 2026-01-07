@@ -72,3 +72,11 @@
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
         mode: '0755'
+
+    - name: Create directory for edge gateway
+      file:
+        path: /opt/jade/gateway
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
