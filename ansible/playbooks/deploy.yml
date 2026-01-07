@@ -1,0 +1,51 @@
+- name: Deploy JADE runtime bundle to edge nodes
+  hosts: coordinator:field
+  become: true
+
+  vars:
+    deploy_dir: /opt/jade
+
+  tasks:
+    - name: Ensure deploy directory exists
+      file:
+        path: "{{ deploy_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+      tags: [sync]
+
+    - name: Sync docker runtime bundle to node (/opt/jade)
+      synchronize:
+        src: "{{ playbook_dir }}/../../docker/"
+        dest: "{{ deploy_dir }}/"
+        recursive: yes
+        delete: yes
+      tags: [sync]
+
+    - name: Ensure compose directory exists
+      file:
+        path: "{{ deploy_dir }}/compose"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+      tags: [sync]
+
+    - name: Sync compose files to node (/opt/jade/compose)
+      synchronize:
+        src: "{{ playbook_dir }}/../../docker/compose/"
+        dest: "{{ deploy_dir }}/compose/"
+        recursive: yes
+        delete: yes
+      tags: [sync]
+
+    - name: Bring up coordinator stack on coordinator nodes
+      command: docker compose -f {{ deploy_dir }}/compose/coordinator.yml up -d --build
+      when: "'coordinator' in group_names"
+      tags: [deploy]
+
+    - name: Bring up field stack on field nodes
+      command: docker compose -f {{ deploy_dir }}/compose/field.yml up -d --build
+      when: "'field' in group_names"
+      tags: [deploy]

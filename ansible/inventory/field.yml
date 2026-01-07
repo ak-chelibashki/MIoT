@@ -1,0 +1,10 @@
+# RPi 3B field
+all:
+  children:
+    field:
+      hosts:
+        rpi3:
+          ansible_host: 192.168.0.226
+          ansible_user: chelibat
+          ansible_ssh_private_key_file: /home/atanas/.ssh/id_ed25519
+#

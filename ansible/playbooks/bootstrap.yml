@@ -1,0 +1,74 @@
+# First-time provisioning
+- name: Bootstrap Edge Node (RPi 5 / RPi 3B)
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install base packages
+      apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - rsync
+        state: present
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Enable Docker service
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    - name: Ensure Docker CLI plugins directory exists
+      file:
+        path: /usr/local/lib/docker/cli-plugins
+        state: directory
+        mode: "0755"
+
+    - name: Install Docker Compose CLI plugin (aarch64)
+      get_url:
+        url: https://github.com/docker/compose/releases/latest/download/docker-compose-linux-aarch64
+        dest: /usr/local/lib/docker/cli-plugins/docker-compose
+        mode: "0755"
+
+    - name: Verify docker compose works
+      command: docker compose version
+      changed_when: false
+
+
+
+    - name: Add user to docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Ensure JADE Docker network exists (CLI, idempotent)
+      command: docker network inspect jade-edge-net
+      register: net_inspect
+      failed_when: false
+      changed_when: false
+
+    - name: Create JADE Docker network if missing
+      command: docker network create jade-edge-net
+      when: net_inspect.rc != 0
+
+
+    - name: Create directories for edge runtime
+      file:
+        path: /opt/jade
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
