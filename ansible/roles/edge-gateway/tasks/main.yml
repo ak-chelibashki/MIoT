@@ -1,0 +1,16 @@
+- name: Ensure gateway directory exists
+  file:
+    path: /opt/jade/gateway
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Copy edge gateway jar
+  copy:
+    src: edge-gateway-0.1.0.jar
+    dest: /opt/jade/gateway/edge-gateway-0.1.0.jar
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [gateway]
