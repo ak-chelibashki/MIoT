@@ -2,6 +2,9 @@ package org.edge.gateway;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
+import org.edge.gateway.agents.AgentDirectory;
+import org.edge.gateway.http.FindAgentsHandler;
+import org.edge.gateway.http.RegisterAgentHandler;
 import org.edge.gateway.models.PeerInfo;
 
 import java.io.OutputStream;
@@ -13,6 +16,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class GatewayApp {
+
+    static final long AGENT_TTL_MS = 30_000;
+    static final AgentDirectory agentDirectory =
+            new AgentDirectory(AGENT_TTL_MS);
+
     public static void main(String[] args) throws Exception {
         String nodeId = env("NODE_ID", "node-unknown");
         int port = Integer.parseInt(env("GATEWAY_PORT", "7000"));
@@ -43,6 +51,12 @@ public class GatewayApp {
                 exchange.sendResponseHeaders(200, body.length);
                 try (OutputStream os = exchange.getResponseBody()) { os.write(body); }
             });
+
+            server.createContext("/agents/register",
+                    new RegisterAgentHandler(agentDirectory));
+
+            server.createContext("/agents",
+                    new FindAgentsHandler(agentDirectory));
 
             server.setExecutor(Executors.newCachedThreadPool());
             server.start();
